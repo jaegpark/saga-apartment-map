@@ -9,146 +9,250 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
+  :root {
+    --ink:#14181f; --ink-2:#4d5566; --ink-3:#8b93a3;
+    --line:#e7e9ef; --card:#f6f7f9; --accent:#1a3d8f; --accent-soft:#eef3fd;
+    --radius:14px;
+  }
   html, body, #map { height: 100%; margin: 0; padding: 0; }
-  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--ink); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+
+  /* ---------- map pins (colors/sizes unchanged) ---------- */
   .num-pin {
     display:flex; align-items:center; justify-content:center;
     width:30px; height:30px; border-radius:50%;
     background:#c0392b; color:#fff; font-weight:700; font-size:14px;
-    border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.45);
+    border:2px solid #fff; box-shadow:0 2px 6px rgba(10,15,25,.4);
   }
+  .num-pin.bk-pin { background:#2563eb; }
   .work-pin {
     display:flex; align-items:center; justify-content:center;
-    width:34px; height:34px; border-radius:8px;
+    width:34px; height:34px; border-radius:9px;
     background:#1a3d8f; color:#fff; font-weight:800; font-size:16px;
-    border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.45);
+    border:2px solid #fff; box-shadow:0 2px 6px rgba(10,15,25,.4);
   }
-  .leaflet-popup-content { font-size:14px; line-height:1.45; margin:12px 14px; min-width:210px; }
-  .popup-title { font-size:15px; font-weight:700; margin-bottom:2px; }
-  .popup-rank { display:inline-block; background:#c0392b; color:#fff; border-radius:4px;
-    padding:0 6px; margin-right:6px; font-size:13px; }
-  .popup-link { display:inline-block; margin-top:7px; padding:8px 10px; background:#eef3ff;
-    border-radius:6px; color:#1a3d8f; font-weight:600; text-decoration:none; }
+  .tj-pin, .wf-pin, .eq-pin {
+    display:flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:6px;
+    color:#fff; font-weight:800; font-size:8px;
+    border:2px solid #fff; box-shadow:0 1px 4px rgba(10,15,25,.4);
+    letter-spacing:.02em;
+  }
+  .tj-pin { background:#0f766e; }
+  .wf-pin { background:#16a34a; font-size:7.5px; }
+  .eq-pin { background:#111; font-size:10px; }
+
+  /* ---------- MTA bullets ---------- */
+  .mta-b {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:19px; height:19px; border-radius:50%; flex:0 0 auto;
+    font-size:11.5px; font-weight:800; line-height:1;
+    font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+    margin:0 2px 1px 0; letter-spacing:0;
+    box-shadow: inset 0 0 0 .5px rgba(0,0,0,.12);
+  }
+
+  /* ---------- leaflet popups (chain stores / work) ---------- */
+  .leaflet-popup-content-wrapper { border-radius:12px; box-shadow:0 8px 28px rgba(10,15,25,.25); }
+  .leaflet-popup-content { font-size:13.5px; line-height:1.45; margin:12px 14px; min-width:200px; color:var(--ink); }
+  .popup-title { font-size:14px; font-weight:700; margin-bottom:2px; }
+  .popup-rank {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:24px; height:24px; padding:0 8px; border-radius:999px;
+    background:#c0392b; color:#fff; font-size:12.5px; font-weight:800; margin-right:8px;
+  }
+  .popup-rank.bk-rank { background:#2563eb; }
+  .popup-link {
+    display:block; margin-top:14px; padding:11px 14px; text-align:center;
+    background:var(--accent); border-radius:12px; color:#fff !important;
+    font-weight:600; font-size:14px; text-decoration:none;
+    transition:background .15s ease;
+  }
+  .popup-link:hover { background:#122c68; }
+
+  /* ---------- leaflet chrome ---------- */
+  .leaflet-control-layers {
+    border:0; border-radius:12px; box-shadow:0 6px 20px rgba(10,15,25,.22);
+    font-size:13px; padding:8px 12px; background:rgba(255,255,255,.96);
+  }
+  .leaflet-control-layers label { display:flex; align-items:center; gap:6px; margin:4px 0; color:var(--ink-2); font-weight:500; }
+  .leaflet-bar { border:0; border-radius:10px; overflow:hidden; box-shadow:0 4px 14px rgba(10,15,25,.22); }
+  .leaflet-bar a { border-bottom:1px solid var(--line); color:var(--ink-2); }
+  .leaflet-control-attribution { font-size:10px; }
+
+  /* ---------- legend ---------- */
   #legend {
     position:absolute; bottom:12px; left:12px; right:12px; z-index:1000;
-    background:rgba(255,255,255,.94); border-radius:10px; padding:8px 10px;
-    font-size:12px; box-shadow:0 1px 6px rgba(0,0,0,.3);
+    background:rgba(255,255,255,.94); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    border:1px solid rgba(15,20,30,.06); border-radius:16px; padding:10px 14px;
+    font-size:12px; box-shadow:0 8px 24px rgba(10,15,25,.18);
   }
-  #legend .row { display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; }
-  #legend .chip { display:inline-block; width:14px; height:5px; border-radius:3px;
-    vertical-align:middle; margin-right:4px; }
-  #legend .pinkey { display:inline-flex; width:16px; height:16px; border-radius:50%;
+  #legend-toggle {
+    font-weight:700; font-size:12.5px; cursor:pointer; display:flex;
+    justify-content:space-between; align-items:center; color:var(--ink); letter-spacing:.01em;
+    user-select:none; -webkit-user-select:none;
+  }
+  #legend-toggle .lg-caret { color:var(--ink-3); font-size:10px; }
+  #legend-body { margin-top:8px; }
+  #legend .row { display:flex; flex-wrap:wrap; gap:5px 12px; align-items:center; }
+  #legend .row > span { display:inline-flex; align-items:center; white-space:nowrap; color:var(--ink-2); font-weight:500; }
+  #legend .pinkey, #legend .bkkey {
+    display:inline-flex; width:16px; height:16px; border-radius:50%;
     background:#c0392b; color:#fff; font-size:10px; font-weight:700;
-    align-items:center; justify-content:center; vertical-align:middle; margin-right:4px; }
-  #legend .wkey { display:inline-flex; width:16px; height:16px; border-radius:4px;
-    background:#1a3d8f; color:#fff; font-size:10px; font-weight:800;
-    align-items:center; justify-content:center; vertical-align:middle; margin-right:4px; }
-  #legend-toggle { font-weight:700; font-size:13px; cursor:pointer; display:flex;
-    justify-content:space-between; align-items:center; }
-  #legend-body { margin-top:6px; }
-  .leaflet-control-layers { font-size:14px; }
+    align-items:center; justify-content:center; margin-right:5px;
+    box-shadow:0 1px 3px rgba(10,15,25,.3);
+  }
+  #legend .bkkey { background:#2563eb; font-size:8px; }
+  #legend .wkey, #legend .tjkey, #legend .wfkey, #legend .eqkey {
+    display:inline-flex; width:16px; height:16px; border-radius:5px;
+    color:#fff; font-weight:800; align-items:center; justify-content:center; margin-right:5px;
+    box-shadow:0 1px 3px rgba(10,15,25,.3);
+  }
+  #legend .wkey  { background:#1a3d8f; font-size:10px; border-radius:4px; }
+  #legend .tjkey { background:#0f766e; font-size:8px; }
+  #legend .wfkey { background:#16a34a; font-size:7.5px; }
+  #legend .eqkey { background:#111; font-size:9px; }
+  #legend .chip { display:inline-block; width:14px; height:5px; border-radius:3px; vertical-align:middle; margin-right:4px; }
+  #subway-key { margin-top:7px; padding-top:7px; border-top:1px solid var(--line); }
+  #subway-key .mta-b { width:17px; height:17px; font-size:10.5px; margin-right:3px; }
+  #legend-foot { margin-top:8px; font-size:10.5px; color:var(--ink-3); line-height:1.4; }
 
-  .p-note { background:#f2f6fb; border-radius:8px; padding:7px 10px; font-size:13px; margin:8px 0 0; color:#33475e; }
-  .p-travel { margin-top:12px; background:#f8f9fb; border:1px solid #e8e8e8; border-radius:8px;
-    padding:8px 10px; font-size:12.5px; line-height:1.55; }
-  .p-travel .pt-t { font-weight:700; font-size:11px; color:#666; text-transform:uppercase;
-    letter-spacing:.04em; margin-bottom:3px; }
-  .p-travel .pt-st { margin-top:3px; }
-  #legend-foot { margin-top:6px; font-size:10.5px; color:#888; line-height:1.35; }
-  /* ---- Brooklyn pins ---- */
-  .num-pin.bk-pin { background:#2563eb; }
-  .popup-rank.bk-rank { background:#2563eb; }
-  #legend .bkkey { display:inline-flex; width:16px; height:16px; border-radius:50%;
-    background:#2563eb; color:#fff; font-size:8px; font-weight:700;
-    align-items:center; justify-content:center; vertical-align:middle; margin-right:4px; }
-  /* ---- chain pins (Trader Joe's / Equinox) ---- */
-  .tj-pin {
-    display:flex; align-items:center; justify-content:center;
-    width:20px; height:20px; border-radius:5px;
-    background:#0f766e; color:#fff; font-weight:800; font-size:8px;
-    border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.45);
-    letter-spacing:.02em;
-  }
-  .wf-pin {
-    display:flex; align-items:center; justify-content:center;
-    width:20px; height:20px; border-radius:5px;
-    background:#16a34a; color:#fff; font-weight:800; font-size:7.5px;
-    border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.45);
-    letter-spacing:.02em;
-  }
-  .eq-pin {
-    display:flex; align-items:center; justify-content:center;
-    width:20px; height:20px; border-radius:5px;
-    background:#111; color:#fff; font-weight:800; font-size:10px;
-    border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.45);
-  }
-  #legend .tjkey { display:inline-flex; width:16px; height:16px; border-radius:4px;
-    background:#0f766e; color:#fff; font-size:8px; font-weight:800;
-    align-items:center; justify-content:center; vertical-align:middle; margin-right:4px; }
-  #legend .wfkey { display:inline-flex; width:16px; height:16px; border-radius:4px;
-    background:#16a34a; color:#fff; font-size:7.5px; font-weight:800;
-    align-items:center; justify-content:center; vertical-align:middle; margin-right:4px; }
-  #legend .eqkey { display:inline-flex; width:16px; height:16px; border-radius:4px;
-    background:#111; color:#fff; font-size:9px; font-weight:800;
-    align-items:center; justify-content:center; vertical-align:middle; margin-right:4px; }
-  /* ---- listing side panel ---- */
+  /* ---------- listing panel ---------- */
   #panel {
-    position:absolute; top:0; right:0; bottom:0; width:340px; max-width:88vw;
-    z-index:2000; background:#fff; box-shadow:-2px 0 18px rgba(0,0,0,.35);
-    transform:translateX(105%); transition:transform .25s ease;
+    position:absolute; top:0; right:0; bottom:0; width:360px; max-width:92vw;
+    z-index:2000; background:#fff; box-shadow:-12px 0 40px rgba(10,15,25,.18);
+    transform:translateX(105%); transition:transform .28s cubic-bezier(.32,.72,.35,1);
     display:flex; flex-direction:column; pointer-events:auto;
   }
   #panel.open { transform:translateX(0); }
+  #panel::before { content:''; display:none; }
   #panel-head {
-    display:flex; justify-content:space-between; align-items:flex-start; gap:8px;
-    padding:12px 14px 10px; border-bottom:1px solid #e6e6e6;
-    padding-top:calc(12px + env(safe-area-inset-top));
+    display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+    padding:16px 18px 12px; border-bottom:1px solid var(--line);
+    padding-top:calc(16px + env(safe-area-inset-top));
   }
-  #panel-title { font-size:16px; font-weight:700; line-height:1.3; }
+  #panel-title { font-size:17px; font-weight:800; line-height:1.25; letter-spacing:-.01em; display:flex; align-items:center; flex-wrap:wrap; }
   #panel-close {
-    flex:0 0 auto; border:0; background:#eee; color:#333; font-size:20px; line-height:1;
-    width:34px; height:34px; border-radius:50%; cursor:pointer;
+    flex:0 0 auto; border:0; background:#f0f1f5; color:#5a6170; font-size:17px; line-height:1;
+    width:30px; height:30px; border-radius:50%; cursor:pointer; transition:background .15s ease;
   }
-  #panel-body { overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 14px calc(18px + env(safe-area-inset-bottom)); font-size:14px; line-height:1.5; }
-  #panel-body .p-hood { color:#666; font-size:13px; margin-bottom:2px; }
-  #panel-body .p-line { margin:6px 0; }
-  #panel-body .p-eff { background:#eef3ff; border-radius:8px; padding:8px 10px; margin:10px 0 2px; }
-  #panel-body .p-eff .sub { font-size:12px; color:#44527a; }
+  #panel-close:hover { background:#e2e4ea; }
+  #panel-body {
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:14px 18px calc(20px + env(safe-area-inset-bottom));
+    font-size:14px; line-height:1.5;
+  }
+  #panel-body .p-addr { color:var(--ink-2); font-size:13.5px; margin-bottom:12px; }
+  .p-rent { display:flex; align-items:baseline; gap:8px; margin:2px 0 12px; }
+  .p-rent .p-rent-v { font-size:24px; font-weight:800; letter-spacing:-.02em; }
+  .p-rent .p-rent-k { font-size:12px; color:var(--ink-3); font-weight:500; }
+  .p-eff {
+    background:var(--accent-soft); border:1px solid #d9e4f8; border-radius:var(--radius);
+    padding:10px 13px; margin:0 0 14px;
+  }
+  .p-eff .k { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#5b6d99; }
+  .p-eff .v { font-size:16px; font-weight:800; color:var(--accent); margin-top:1px; }
+  .p-eff .sub { font-size:12px; color:#44527a; margin-top:2px; }
+  .p-meta { border-top:1px solid var(--line); margin-bottom:4px; }
+  .p-line { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .p-line .k { color:var(--ink-3); font-size:12.5px; font-weight:500; flex:0 0 auto; }
+  .p-line .v { font-weight:600; font-size:13.5px; text-align:right; }
+  .p-note {
+    background:#f4f7fc; border:1px solid #e4eaf4; border-radius:10px;
+    padding:9px 12px; font-size:13px; margin:10px 0 0; color:#33475e;
+  }
   .p-warn {
-    background:#fff4e0; border:1px solid #e8a93d; color:#7a4d00;
-    border-radius:8px; padding:8px 10px; font-size:13px; margin:10px 0 0;
+    background:#fff8ec; border:1px solid #f0d9a8; color:#7a4d00;
+    border-radius:10px; padding:9px 12px; font-size:13px; margin:10px 0 0;
   }
   .p-warn b { display:block; margin-bottom:2px; }
-  .p-fp { margin-top:12px; }
-  .p-fp img { width:100%; display:block; border:1px solid #ddd; border-radius:8px; cursor:pointer; }
-  .p-fp .fp-cap { font-size:12px; color:#666; margin-top:4px; }
-  .p-fp .fp-tap { font-size:11px; color:#1a3d8f; margin-top:2px; }
-  .p-nofp {
-    margin-top:12px; background:#f5f5f5; color:#888; font-style:italic;
-    border-radius:8px; padding:12px; text-align:center; font-size:13px;
+
+  /* travel card */
+  .p-travel {
+    margin-top:16px; background:var(--card); border:1px solid var(--line);
+    border-radius:var(--radius); padding:12px 13px;
   }
-  #panel-body .popup-link { margin-top:12px; }
-  /* ---- fullscreen floor plan viewer ---- */
+  .p-travel .pt-t {
+    font-weight:800; font-size:11px; color:var(--ink-2); text-transform:uppercase;
+    letter-spacing:.07em; display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .p-travel .pt-t span { font-weight:500; color:var(--ink-3); text-transform:none; letter-spacing:0; font-size:10.5px; }
+  .pt-dest { margin-top:10px; }
+  .pt-name { display:flex; align-items:center; gap:7px; font-size:13.5px; font-weight:700; }
+  .pt-name .dest-chip {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:20px; height:20px; padding:0 5px; border-radius:6px;
+    color:#fff; font-size:8.5px; font-weight:800; letter-spacing:.02em;
+  }
+  .pt-name .dest-chip.eq { background:#111; }
+  .pt-name .dest-chip.tj { background:#0f766e; }
+  .pt-name .dest-chip.wf { background:#16a34a; font-size:7px; }
+  .pt-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:7px; }
+  .pt-cell {
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:7px 9px 6px;
+  }
+  .pt-cell .m { display:flex; align-items:center; gap:4px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); }
+  .pt-cell .m svg { width:11px; height:11px; fill:var(--ink-3); flex:0 0 auto; }
+  .pt-cell .v { font-size:15px; font-weight:800; margin-top:2px; letter-spacing:-.01em; }
+  .pt-cell .v small { font-size:10.5px; font-weight:600; color:var(--ink-3); margin-left:1px; }
+  .pt-sub {
+    margin-top:14px; font-weight:800; font-size:11px; color:var(--ink-2);
+    text-transform:uppercase; letter-spacing:.07em;
+  }
+  .pt-st {
+    display:flex; align-items:center; gap:6px; padding:8px 0 0; margin-top:8px;
+    border-top:1px solid var(--line);
+  }
+  .pt-st:first-of-type { border-top:0; margin-top:4px; padding-top:4px; }
+  .pt-st .pt-stn { font-size:13px; font-weight:600; flex:1 1 auto; min-width:0; }
+  .pt-st .pt-walk { font-size:12px; color:var(--ink-3); font-weight:500; white-space:nowrap; }
+
+  /* floor plan */
+  .p-fp { margin-top:16px; }
+  .p-fp img {
+    width:100%; display:block; border:1px solid var(--line); border-radius:12px; cursor:pointer;
+    transition:box-shadow .15s ease;
+  }
+  .p-fp img:hover { box-shadow:0 6px 20px rgba(10,15,25,.15); }
+  .p-fp .fp-cap { font-size:12px; color:var(--ink-2); margin-top:6px; }
+  .p-fp .fp-tap { font-size:11.5px; color:var(--accent); font-weight:600; margin-top:2px; }
+  .p-nofp {
+    margin-top:16px; background:var(--card); border:1px dashed #d3d7e0; color:var(--ink-3);
+    border-radius:12px; padding:14px; text-align:center; font-size:12.5px;
+  }
+
+  /* ---------- lightbox ---------- */
   #lightbox {
-    position:absolute; inset:0; z-index:3000; background:rgba(0,0,0,.93);
+    position:absolute; inset:0; z-index:3000; background:rgba(8,10,14,.94);
     display:none; align-items:center; justify-content:center; flex-direction:column;
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
   }
   #lightbox.open { display:flex; }
   #lightbox img { max-width:100%; max-height:88%; object-fit:contain; }
-  #lightbox .lb-cap { color:#fff; font-size:13px; margin-top:10px; padding:0 16px; text-align:center; }
+  #lightbox .lb-cap { color:#e8eaf0; font-size:13px; margin-top:12px; padding:0 16px; text-align:center; }
   #lightbox .lb-close {
-    position:absolute; top:calc(10px + env(safe-area-inset-top)); right:14px;
-    border:0; background:rgba(255,255,255,.18); color:#fff; font-size:22px;
-    width:40px; height:40px; border-radius:50%; cursor:pointer;
+    position:absolute; top:calc(12px + env(safe-area-inset-top)); right:14px;
+    border:0; background:rgba(255,255,255,.14); color:#fff; font-size:20px;
+    width:38px; height:38px; border-radius:50%; cursor:pointer;
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
   }
+
   @media (max-width:640px) {
     #panel {
-      top:auto; left:0; right:0; bottom:0; width:auto; max-width:none; max-height:64%;
-      transform:translateY(105%); border-radius:14px 14px 0 0;
-      box-shadow:0 -2px 18px rgba(0,0,0,.35);
+      top:auto; left:0; right:0; bottom:0; width:auto; max-width:none; max-height:72%;
+      transform:translateY(105%); border-radius:20px 20px 0 0;
+      box-shadow:0 -12px 40px rgba(10,15,25,.25);
     }
     #panel.open { transform:translateY(0); }
-    #panel-head { padding-top:10px; }
+    #panel::before {
+      display:block; content:''; width:38px; height:4.5px; border-radius:3px;
+      background:#d8dbe3; margin:9px auto 0; flex:0 0 auto;
+    }
+    #panel-head { padding-top:8px; }
+    .leaflet-control-layers { font-size:12.5px; }
   }
 </style>
 </head>
@@ -156,7 +260,7 @@
 <div id="map"></div>
 <div id="legend">
   <div id="legend-toggle" onclick="var b=document.getElementById('legend-body');b.style.display=b.style.display==='none'?'block':'none';">
-    <span>Legend &amp; layers</span><span>&#9650;&#9660;</span>
+    <span>Legend &amp; layers</span><span class="lg-caret">&#9650;&#9660;</span>
   </div>
   <div id="legend-body">
     <div class="row" style="margin-bottom:4px;">
@@ -193,22 +297,22 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_M
 var WORK = { name: 'Saga office - 119 5th Ave, New York, NY 10003 (Flatiron)', lat: 40.73912, lon: -73.99107 };
 
 var listings = [
-  { n:1,  hood:'Gramercy',      addr:'354 East 20th St #10',      price:'$5,000/mo',             eff:'$5,000/mo',  effnote:'',                        commute:'15 min', avail:'Available now',  lat:40.73506, lon:-73.98027, url:'https://streeteasy.com/building/343-1-avenue-new_york/10', travel:{"stations":[{"name":"23 St-Baruch College","lines":"4/6","walk":12},{"name":"3 Av","lines":"L","walk":12}],"tj":{"name":"Union Square","transit":14,"walk":14,"bike":5},"eq":{"name":"Gramercy","transit":13,"walk":13,"bike":4}} },
-  { n:2,  hood:'East Village',  addr:'204 Avenue B #2',           price:'$5,000/mo',             eff:'$5,000/mo',  effnote:'',                        commute:'15 min', avail:'Avail Oct 15',   lat:40.72845, lon:-73.97900, url:'https://streeteasy.com/building/204-avenue-b-new_york/2', travel:{"stations":[{"name":"1 Av","lines":"L","walk":6}],"tj":{"name":"East Village","transit":5,"walk":5,"bike":2},"eq":{"name":"Orchard Street","transit":25,"walk":22,"bike":7}} },
-  { n:3,  hood:'East Village',  addr:'310 East 2nd St #6K',       price:'$4,995/mo',             eff:'$4,995/mo',  effnote:'',                        commute:'24 min', avail:'Avail Oct 15',   lat:40.72037, lon:-73.97885, url:'https://streeteasy.com/building/the-adele/6k', travel:{"stations":[{"name":"2 Av","lines":"F","walk":13},{"name":"Delancey St-Essex St","lines":"F","walk":14}],"tj":{"name":"Essex Crossing","transit":32,"walk":18,"bike":6},"eq":{"name":"Orchard Street","transit":16,"walk":17,"bike":5}}, warn:'Building\'s own data conflicts (1BR vs 2BR) - confirm with broker' },
-  { n:4,  hood:"Hell's Kitchen",addr:'635 West 42nd St #20K',     price:'$4,700/mo',             eff:'$5,200/mo',  effnote:'incl $500/mo common charge', commute:'30 min', avail:'Avail Oct 1',    lat:40.76125, lon:-73.99911, url:'https://streeteasy.com/building/atelier-condominium/20k', travel:{"stations":[{"name":"34 St-Hudson Yards","lines":"7","walk":9},{"name":"42 St-Port Authority Bus Terminal","lines":"A/C/E","walk":12}],"tj":{"name":"72nd & Broadway","transit":30,"walk":39,"bike":12},"eq":{"name":"Hudson Yards","transit":10,"walk":10,"bike":3}} },
-  { n:5,  hood:"Hell's Kitchen",addr:'635 West 42nd St #17B',     price:'$4,900/mo',             eff:'$5,650/mo',  effnote:'incl $750/mo common charge', commute:'30 min', avail:'Avail Oct 1',    lat:40.76295, lon:-73.99975, url:'https://streeteasy.com/building/atelier-condominium/17b', travel:{"stations":[{"name":"34 St-Hudson Yards","lines":"7","walk":13},{"name":"42 St-Port Authority Bus Terminal","lines":"A/C/E","walk":15}],"tj":{"name":"72nd & Broadway","transit":34,"walk":35,"bike":11},"eq":{"name":"Hudson Yards","transit":14,"walk":13,"bike":4}} },
-  { n:6,  hood:'East Harlem',   addr:'1635 Lexington Ave #7C',    price:'$4,700/mo - 2 ba',      eff:'$4,700/mo',  effnote:'',                        commute:'25 min', avail:'Avail Sep 15',   lat:40.79049, lon:-73.94721, url:'https://streeteasy.com/building/lexington-hill-condominiums/7c', travel:{"stations":[{"name":"103 St","lines":"4/6","walk":1}],"tj":{"name":"UWS","transit":22,"walk":31,"bike":10},"eq":{"name":"East 92nd Street","transit":12,"walk":14,"bike":4}} },
-  { n:7,  hood:'Lenox Hill',    addr:'339 East 75th St #3E',      price:'$4,999/mo ($4,791 net)',eff:'$4,999/mo',  effnote:'$4,791/mo net effective',  commute:'25 min', avail:'Available now',  lat:40.77015, lon:-73.95496, url:'https://streeteasy.com/building/339-east-75-street-new_york/3e', travel:{"stations":[{"name":"72 St","lines":"N/Q/R","walk":5}],"tj":{"name":"UES Bridgemarket","transit":21,"walk":21,"bike":7},"eq":{"name":"East 74th Street","transit":3,"walk":3,"bike":1}} },
-  { n:8,  hood:'Yorkville',     addr:'227 East 81st St #2W',      price:'$4,999/mo ($4,791 net)',eff:'$4,999/mo',  effnote:'$4,791/mo net effective',  commute:'28 min', avail:'Available now',  lat:40.77529, lon:-73.95505, url:'https://streeteasy.com/building/227-east-81-street-new_york/2w', travel:{"stations":[{"name":"77 St","lines":"4/6","walk":8},{"name":"86 St","lines":"N/Q/R","walk":9}],"tj":{"name":"UES Bridgemarket","transit":32,"walk":31,"bike":10},"eq":{"name":"East 85th Street","transit":13,"walk":13,"bike":4}} },
-  { n:9,  hood:'East Harlem',   addr:'172 East 108th St #1',      price:'$3,899/mo - 2 ba',      eff:'$3,899/mo',  effnote:'',                        commute:'30 min', avail:'Available now',  lat:40.79303, lon:-73.94455, url:'https://streeteasy.com/building/172-east-108-street-new_york/1', travel:{"stations":[{"name":"110 St","lines":"4/6","walk":6}],"tj":{"name":"Harlem","transit":25,"walk":31,"bike":10},"eq":{"name":"East 92nd Street","transit":20,"walk":24,"bike":8}} },
-  { n:10, hood:'Yorkville',     addr:'309 East 92nd St #F1',      price:'$5,050/mo - 3 BR',      eff:'$5,050/mo',  effnote:'',                        commute:'28 min', avail:'Avail Oct 3',    lat:40.78156, lon:-73.94817, url:'https://streeteasy.com/building/309-east-92-street-new_york/f1', travel:{"stations":[{"name":"96 St","lines":"N/Q/R","walk":9}],"tj":{"name":"UWS","transit":32,"walk":39,"bike":13},"eq":{"name":"East 92nd Street","transit":14,"walk":14,"bike":4}} }
+  { n:1,  hood:'Gramercy',      addr:'354 East 20th St #10',      price:'$5,000/mo',             eff:'$5,000/mo',  effnote:'',                        commute:'15 min', avail:'Available now',  lat:40.73506, lon:-73.98027, url:'https://streeteasy.com/building/343-1-avenue-new_york/10', travel:{"stations":[{"name":"23 St-Baruch College","lines":"4/6","walk":12},{"name":"3 Av","lines":"L","walk":12}],"tj":{"name":"Union Square","transit":14,"walk":14,"bike":5},"eq":{"name":"Gramercy","transit":13,"walk":13,"bike":4},"wf":{"name":"Union Square","transit":10,"walk":17,"bike":6}} },
+  { n:2,  hood:'East Village',  addr:'204 Avenue B #2',           price:'$5,000/mo',             eff:'$5,000/mo',  effnote:'',                        commute:'15 min', avail:'Avail Oct 15',   lat:40.72845, lon:-73.97900, url:'https://streeteasy.com/building/204-avenue-b-new_york/2', travel:{"stations":[{"name":"1 Av","lines":"L","walk":6}],"tj":{"name":"East Village","transit":5,"walk":5,"bike":2},"eq":{"name":"Orchard Street","transit":25,"walk":22,"bike":7},"wf":{"name":"Stuytown","transit":6,"walk":5,"bike":2}} },
+  { n:3,  hood:'East Village',  addr:'310 East 2nd St #6K',       price:'$4,995/mo',             eff:'$4,995/mo',  effnote:'',                        commute:'24 min', avail:'Avail Oct 15',   lat:40.72037, lon:-73.97885, url:'https://streeteasy.com/building/the-adele/6k', travel:{"stations":[{"name":"2 Av","lines":"F","walk":13},{"name":"Delancey St-Essex St","lines":"F","walk":14}],"tj":{"name":"Essex Crossing","transit":32,"walk":18,"bike":6},"eq":{"name":"Orchard Street","transit":16,"walk":17,"bike":5},"wf":{"name":"Stuytown","transit":23,"walk":20,"bike":7}}, warn:'Building\'s own data conflicts (1BR vs 2BR) - confirm with broker' },
+  { n:4,  hood:"Hell's Kitchen",addr:'635 West 42nd St #20K',     price:'$4,700/mo',             eff:'$5,200/mo',  effnote:'incl $500/mo common charge', commute:'30 min', avail:'Avail Oct 1',    lat:40.76125, lon:-73.99911, url:'https://streeteasy.com/building/atelier-condominium/20k', travel:{"stations":[{"name":"34 St-Hudson Yards","lines":"7","walk":9},{"name":"42 St-Port Authority Bus Terminal","lines":"A/C/E","walk":12}],"tj":{"name":"72nd & Broadway","transit":30,"walk":39,"bike":12},"eq":{"name":"Hudson Yards","transit":10,"walk":10,"bike":3},"wf":{"name":"Manhattan West","transit":18,"walk":18,"bike":6}} },
+  { n:5,  hood:"Hell's Kitchen",addr:'635 West 42nd St #17B',     price:'$4,900/mo',             eff:'$5,650/mo',  effnote:'incl $750/mo common charge', commute:'30 min', avail:'Avail Oct 1',    lat:40.76295, lon:-73.99975, url:'https://streeteasy.com/building/atelier-condominium/17b', travel:{"stations":[{"name":"34 St-Hudson Yards","lines":"7","walk":13},{"name":"42 St-Port Authority Bus Terminal","lines":"A/C/E","walk":15}],"tj":{"name":"72nd & Broadway","transit":34,"walk":35,"bike":11},"eq":{"name":"Hudson Yards","transit":14,"walk":13,"bike":4},"wf":{"name":"Hell's Kitchen","transit":20,"walk":18,"bike":6}} },
+  { n:6,  hood:'East Harlem',   addr:'1635 Lexington Ave #7C',    price:'$4,700/mo - 2 ba',      eff:'$4,700/mo',  effnote:'',                        commute:'25 min', avail:'Avail Sep 15',   lat:40.79049, lon:-73.94721, url:'https://streeteasy.com/building/lexington-hill-condominiums/7c', travel:{"stations":[{"name":"103 St","lines":"4/6","walk":1}],"tj":{"name":"UWS","transit":22,"walk":31,"bike":10},"eq":{"name":"East 92nd Street","transit":12,"walk":14,"bike":4},"wf":{"name":"Upper East Side","transit":11,"walk":20,"bike":7}} },
+  { n:7,  hood:'Lenox Hill',    addr:'339 East 75th St #3E',      price:'$4,999/mo ($4,791 net)',eff:'$4,999/mo',  effnote:'$4,791/mo net effective',  commute:'25 min', avail:'Available now',  lat:40.77015, lon:-73.95496, url:'https://streeteasy.com/building/339-east-75-street-new_york/3e', travel:{"stations":[{"name":"72 St","lines":"N/Q/R","walk":5}],"tj":{"name":"UES Bridgemarket","transit":21,"walk":21,"bike":7},"eq":{"name":"East 74th Street","transit":3,"walk":3,"bike":1},"wf":{"name":"Lenox Hill","transit":14,"walk":14,"bike":5}} },
+  { n:8,  hood:'Yorkville',     addr:'227 East 81st St #2W',      price:'$4,999/mo ($4,791 net)',eff:'$4,999/mo',  effnote:'$4,791/mo net effective',  commute:'28 min', avail:'Available now',  lat:40.77529, lon:-73.95505, url:'https://streeteasy.com/building/227-east-81-street-new_york/2w', travel:{"stations":[{"name":"77 St","lines":"4/6","walk":8},{"name":"86 St","lines":"N/Q/R","walk":9}],"tj":{"name":"UES Bridgemarket","transit":32,"walk":31,"bike":10},"eq":{"name":"East 85th Street","transit":13,"walk":13,"bike":4},"wf":{"name":"Upper East Side","transit":9,"walk":8,"bike":3}} },
+  { n:9,  hood:'East Harlem',   addr:'172 East 108th St #1',      price:'$3,899/mo - 2 ba',      eff:'$3,899/mo',  effnote:'',                        commute:'30 min', avail:'Available now',  lat:40.79303, lon:-73.94455, url:'https://streeteasy.com/building/172-east-108-street-new_york/1', travel:{"stations":[{"name":"110 St","lines":"4/6","walk":6}],"tj":{"name":"Harlem","transit":25,"walk":31,"bike":10},"eq":{"name":"East 92nd Street","transit":20,"walk":24,"bike":8},"wf":{"name":"Harlem","transit":22,"walk":29,"bike":10}} },
+  { n:10, hood:'Yorkville',     addr:'309 East 92nd St #F1',      price:'$5,050/mo - 3 BR',      eff:'$5,050/mo',  effnote:'',                        commute:'28 min', avail:'Avail Oct 3',    lat:40.78156, lon:-73.94817, url:'https://streeteasy.com/building/309-east-92-street-new_york/f1', travel:{"stations":[{"name":"96 St","lines":"N/Q/R","walk":9}],"tj":{"name":"UWS","transit":32,"walk":39,"bike":13},"eq":{"name":"East 92nd Street","transit":14,"walk":14,"bike":4},"wf":{"name":"Upper East Side","transit":10,"walk":15,"bike":5}} }
 ,
-{ n:"B1", hood:"Williamsburg", addr:"595 Metropolitan Ave #E5, Brooklyn", price:"$4,795/mo", eff:"$4,795/mo", effnote:"", specs:"2BR/1BA - central air", commute:"16 min", avail:"Available now", lat:40.71429, lon:-73.94902, url:"https://streeteasy.com/building/595-metropolitan-avenue-brooklyn/e5", bk:true, travel:{"stations":[{"name":"Lorimer St","lines":"L","walk":1}],"tj":{"name":"Williamsburg","transit":19,"walk":20,"bike":6},"eq":{"name":"Williamsburg","transit":13,"walk":13,"bike":4}} },
-  { n:"B2", hood:"Williamsburg", addr:"193 Graham Ave #4U, Brooklyn", price:"$4,495/mo", eff:"$4,495/mo", effnote:"", specs:"2BR/1BA + balcony - central AC", commute:"25 min", avail:"Available now", notes:["Guarantors accepted"], lat:40.70863, lon:-73.94374, url:"https://streeteasy.com/building/193-graham/4u", bk:true, travel:{"stations":[{"name":"Montrose Av","lines":"L","walk":6},{"name":"Grand St","lines":"L","walk":8}],"tj":{"name":"Williamsburg","transit":26,"walk":33,"bike":11},"eq":{"name":"Williamsburg","transit":20,"walk":27,"bike":9}} },
-  { n:"B3", hood:"Downtown Brooklyn", addr:"430 Albee Square #14E, Brooklyn", price:"$4,767/mo", eff:"$4,767/mo", effnote:"", specs:"2BR/1BA - central air", commute:"24 min", avail:"Available now", notes:["Building's own leasing arm - no broker games"], lat:40.69085, lon:-73.98359, url:"https://streeteasy.com/building/canvas-albee-square/14e", bk:true, travel:{"stations":[{"name":"Jay St-MetroTech","lines":"N/R/W","walk":4},{"name":"DeKalb Av","lines":"B/D/N/Q/R/W","walk":5}],"tj":{"name":"City Point","transit":9,"walk":9,"bike":3},"eq":{"name":"Brooklyn Heights","transit":14,"walk":14,"bike":5}} },
-  { n:"B4", hood:"Greenpoint border", addr:"492 Humboldt St #1, Brooklyn", price:"$4,950/mo", eff:"$4,950/mo", effnote:"", specs:"2BR/1BA, 850 sqft + private backyard", commute:"24 min", avail:"Avail Sep 15", notes:["AC type unconfirmed - likely window units, ask broker","Individual landlord"], lat:40.71913, lon:-73.94338, url:"https://streeteasy.com/building/492-humboldt-street-brooklyn/1", bk:true, travel:{"stations":[{"name":"Graham Av","lines":"L","walk":8}],"tj":{"name":"Williamsburg","transit":26,"walk":35,"bike":11},"eq":{"name":"Williamsburg","transit":20,"walk":28,"bike":9}} },
-  { n:"B5", hood:"Boerum Hill", addr:"259 Wyckoff St #4, Brooklyn", price:"$3,995/mo", eff:"$3,995/mo", effnote:"", specs:"2BR - central air", commute:"30 min", avail:"Available now", lat:40.68351, lon:-73.98385, url:"https://streeteasy.com/building/259-wyckoff-street-brooklyn/4", bk:true, travel:{"stations":[{"name":"Atlantic Av-Barclays Ctr","lines":"D/N/R/W","walk":8},{"name":"Atlantic Av-Barclays Ctr","lines":"B/Q","walk":10}],"tj":{"name":"Court St","transit":29,"walk":20,"bike":6},"eq":{"name":"Brooklyn Heights","transit":26,"walk":25,"bike":8}} }
+{ n:"B1", hood:"Williamsburg", addr:"595 Metropolitan Ave #E5, Brooklyn", price:"$4,795/mo", eff:"$4,795/mo", effnote:"", specs:"2BR/1BA - central air", commute:"16 min", avail:"Available now", lat:40.71429, lon:-73.94902, url:"https://streeteasy.com/building/595-metropolitan-avenue-brooklyn/e5", bk:true, travel:{"stations":[{"name":"Lorimer St","lines":"L","walk":1}],"tj":{"name":"Williamsburg","transit":19,"walk":20,"bike":6},"eq":{"name":"Williamsburg","transit":13,"walk":13,"bike":4},"wf":{"name":"Brooklyn Grand Street","transit":9,"walk":11,"bike":4}} },
+  { n:"B2", hood:"Williamsburg", addr:"193 Graham Ave #4U, Brooklyn", price:"$4,495/mo", eff:"$4,495/mo", effnote:"", specs:"2BR/1BA + balcony - central AC", commute:"25 min", avail:"Available now", notes:["Guarantors accepted"], lat:40.70863, lon:-73.94374, url:"https://streeteasy.com/building/193-graham/4u", bk:true, travel:{"stations":[{"name":"Montrose Av","lines":"L","walk":6},{"name":"Grand St","lines":"L","walk":8}],"tj":{"name":"Williamsburg","transit":26,"walk":33,"bike":11},"eq":{"name":"Williamsburg","transit":20,"walk":27,"bike":9},"wf":{"name":"Brooklyn Grand Street","transit":7,"walk":6,"bike":2}} },
+  { n:"B3", hood:"Downtown Brooklyn", addr:"430 Albee Square #14E, Brooklyn", price:"$4,767/mo", eff:"$4,767/mo", effnote:"", specs:"2BR/1BA - central air", commute:"24 min", avail:"Available now", notes:["Building's own leasing arm - no broker games"], lat:40.69085, lon:-73.98359, url:"https://streeteasy.com/building/canvas-albee-square/14e", bk:true, travel:{"stations":[{"name":"Jay St-MetroTech","lines":"N/R/W","walk":4},{"name":"DeKalb Av","lines":"B/D/N/Q/R/W","walk":5}],"tj":{"name":"City Point","transit":9,"walk":9,"bike":3},"eq":{"name":"Brooklyn Heights","transit":14,"walk":14,"bike":5},"wf":{"name":"Fort Greene","transit":9,"walk":16,"bike":5}} },
+  { n:"B4", hood:"Greenpoint border", addr:"492 Humboldt St #1, Brooklyn", price:"$4,950/mo", eff:"$4,950/mo", effnote:"", specs:"2BR/1BA, 850 sqft + private backyard", commute:"24 min", avail:"Avail Sep 15", notes:["AC type unconfirmed - likely window units, ask broker","Individual landlord"], lat:40.71913, lon:-73.94338, url:"https://streeteasy.com/building/492-humboldt-street-brooklyn/1", bk:true, travel:{"stations":[{"name":"Graham Av","lines":"L","walk":8}],"tj":{"name":"Williamsburg","transit":26,"walk":35,"bike":11},"eq":{"name":"Williamsburg","transit":20,"walk":28,"bike":9},"wf":{"name":"Brooklyn Grand Street","transit":13,"walk":10,"bike":3}} },
+  { n:"B5", hood:"Boerum Hill", addr:"259 Wyckoff St #4, Brooklyn", price:"$3,995/mo", eff:"$3,995/mo", effnote:"", specs:"2BR - central air", commute:"30 min", avail:"Available now", lat:40.68351, lon:-73.98385, url:"https://streeteasy.com/building/259-wyckoff-street-brooklyn/4", bk:true, travel:{"stations":[{"name":"Atlantic Av-Barclays Ctr","lines":"D/N/R/W","walk":8},{"name":"Atlantic Av-Barclays Ctr","lines":"B/Q","walk":10}],"tj":{"name":"Court St","transit":29,"walk":20,"bike":6},"eq":{"name":"Brooklyn Heights","transit":26,"walk":25,"bike":8},"wf":{"name":"Fort Greene","transit":13,"walk":15,"bike":5}} }
 ];
 
 
@@ -236,31 +340,76 @@ var lightbox = document.getElementById('lightbox');
 var lightboxImg = document.getElementById('lightbox-img');
 var lightboxCap = document.getElementById('lightbox-cap');
 
+var MTA_COLORS = {
+  '1':['#EE352E','#fff'], '2':['#EE352E','#fff'], '3':['#EE352E','#fff'],
+  '4':['#00933C','#fff'], '5':['#00933C','#fff'], '6':['#00933C','#fff'],
+  '7':['#B933AD','#fff'],
+  'A':['#0039A6','#fff'], 'C':['#0039A6','#fff'], 'E':['#0039A6','#fff'],
+  'B':['#FF6319','#000'], 'D':['#FF6319','#000'], 'F':['#FF6319','#000'], 'M':['#FF6319','#000'],
+  'N':['#FCCC0A','#000'], 'Q':['#FCCC0A','#000'], 'R':['#FCCC0A','#000'], 'W':['#FCCC0A','#000'],
+  'G':['#6CBE45','#fff'],
+  'J':['#996633','#fff'], 'Z':['#996633','#fff'],
+  'L':['#A7A9AC','#000'], 'S':['#808183','#fff']
+};
+function mtaBullets(str) {
+  return String(str).split(/[\s\/]+/).filter(function(t){ return t.length; }).map(function(t) {
+    var c = MTA_COLORS[t] || ['#5a6472','#fff'];
+    return '<span class="mta-b" style="background:'+c[0]+';color:'+c[1]+';">'+t+'</span>';
+  }).join('');
+}
+var MODE_ICONS = {
+  transit: '<svg viewBox="0 0 24 24"><path d="M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h2.23l1.5-1.5h4.54l1.5 1.5H18v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-4-4-8-4zM7.5 17c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm3.5-7H6V6h5v4zm7 0h-5V6h5v4zm-1.5 7c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>',
+  walk: '<svg viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>',
+  bike: '<svg viewBox="0 0 24 24"><path d="M15.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM5 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm5.8-10l2.4-2.4.8.8c1.3 1.3 3 2.1 5.1 2.1V9c-1.5 0-2.7-.6-3.6-1.5l-1.9-1.9c-.2-.2-.4-.3-.6-.3-.3 0-.5.1-.6.3l-3.2 3.2c-.2.2-.3.4-.3.6 0 .3.1.5.3.6l2.2 2.4V19h2v-6.7l-1.6-1.8zM19 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-1.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z"/></svg>'
+};
+var MODE_LABELS = { transit:'Transit', walk:'Walk', bike:'Bike' };
+function travelCell(mode, mins) {
+  return '<div class="pt-cell"><div class="m">'+MODE_ICONS[mode]+MODE_LABELS[mode]+'</div>'
+    + '<div class="v">'+mins+'<small> min</small></div></div>';
+}
+
 function openPanel(n) {
   var l = null;
   for (var i = 0; i < listings.length; i++) { if (listings[i].n === n) { l = listings[i]; break; } }
   if (!l) return;
-  panelTitle.innerHTML = '<span class="popup-rank'+(l.bk?' bk-rank':'')+'">'+l.n+'</span> '+l.hood;
+  panelTitle.innerHTML = '<span class="popup-rank'+(l.bk?' bk-rank':'')+'">'+l.n+'</span><span>'+l.hood+'</span>';
   var h = '';
-  h += '<div class="p-hood">'+l.addr+'</div>';
-  h += '<div class="p-line">Rent: <b>'+l.price+'</b></div>';
-  h += '<div class="p-eff">Effective monthly rent: <b>'+l.eff+'</b>';
+  h += '<div class="p-addr">'+l.addr+'</div>';
+  h += '<div class="p-rent"><span class="p-rent-v">'+l.price+'</span><span class="p-rent-k">listed rent</span></div>';
+  h += '<div class="p-eff"><div class="k">Effective monthly</div><div class="v">'+l.eff+'</div>';
   if (l.effnote) { h += '<div class="sub">'+l.effnote+'</div>'; }
   h += '</div>';
-  h += '<div class="p-line">Commute to 119 5th Ave: <b>'+l.commute+'</b></div>';
-  h += '<div class="p-line">'+l.avail+'</div>';
-  if (l.specs) { h += '<div class="p-line">'+l.specs+'</div>'; }
+  h += '<div class="p-meta">';
+  h += '<div class="p-line"><span class="k">Commute to 119 5th Ave</span><span class="v">'+l.commute+'</span></div>';
+  h += '<div class="p-line"><span class="k">Availability</span><span class="v">'+l.avail+'</span></div>';
+  if (l.specs) { h += '<div class="p-line"><span class="k">Specs</span><span class="v">'+l.specs+'</span></div>'; }
+  h += '</div>';
   if (l.notes) { for (var ni = 0; ni < l.notes.length; ni++) { h += '<div class="p-note">'+l.notes[ni]+'</div>'; } }
   if (l.warn) {
     h += '<div class="p-warn"><b>&#9888; Heads up</b>'+l.warn+'</div>';
   }
   if (l.travel) {
-    h += '<div class="p-travel"><div class="pt-t">Getting there (approx)</div>';
-    h += '<div><b>Equinox '+l.travel.eq.name+'</b>: '+l.travel.eq.transit+' min transit / '+l.travel.eq.walk+' walk / '+l.travel.eq.bike+' bike</div>';
-    h += '<div><b>Trader Joe\'s '+l.travel.tj.name+'</b>: '+l.travel.tj.transit+' min transit / '+l.travel.tj.walk+' walk / '+l.travel.tj.bike+' bike</div>';
+    h += '<div class="p-travel"><div class="pt-t">Getting there <span>approx.</span></div>';
+    var dests = [
+      { chip:'E',  cls:'eq', label:'Equinox',      d:l.travel.eq },
+      { chip:'TJ', cls:'tj', label:"Trader Joe's", d:l.travel.tj },
+      { chip:'WF', cls:'wf', label:'Whole Foods',  d:l.travel.wf }
+    ];
+    for (var di = 0; di < dests.length; di++) {
+      var dest = dests[di], d = dest.d;
+      h += '<div class="pt-dest"><div class="pt-name"><span class="dest-chip '+dest.cls+'">'+dest.chip+'</span>'+dest.label+' '+d.name+'</div>';
+      h += '<div class="pt-grid">'
+        + travelCell('transit', d.transit)
+        + travelCell('walk', d.walk)
+        + travelCell('bike', d.bike)
+        + '</div></div>';
+    }
+    h += '<div class="pt-sub">Nearest subway</div>';
     for (var si = 0; si < l.travel.stations.length; si++) {
       var st = l.travel.stations[si];
-      h += '<div class="pt-st">Subway: <b>'+st.name+' ('+st.lines+')</b> - '+st.walk+' min walk</div>';
+      h += '<div class="pt-st"><span class="pt-bullets">'+mtaBullets(st.lines)+'</span>'
+        + '<span class="pt-stn">'+st.name+'</span>'
+        + '<span class="pt-walk">'+st.walk+' min walk</span></div>';
     }
     h += '</div>';
   }
@@ -274,6 +423,7 @@ function openPanel(n) {
   }
   h += '<a class="popup-link" href="'+l.url+'" target="_blank" rel="noopener">View on StreetEasy &#8599;</a>';
   panelBody.innerHTML = h;
+  panelBody.scrollTop = 0;
   panelEl.classList.add('open');
   panelEl.setAttribute('aria-hidden', 'false');
 }
@@ -432,11 +582,10 @@ eqLayer.addTo(map);
 
 L.control.layers(null, { 'Subway lines': subwayLayer, "Trader Joe's": tjLayer, 'Whole Foods': wfLayer, 'Equinox': eqLayer }, { position:'topright', collapsed:false }).addTo(map);
 
-// legend chips
+// legend subway bullets (MTA signage style)
 var keyHtml = '';
 Object.keys(COLOR_GROUPS).forEach(function(k) {
-  var g = COLOR_GROUPS[k];
-  keyHtml += '<span style="white-space:nowrap;"><span class="chip" style="background:'+g.color+';"></span>'+g.label+'</span>';
+  keyHtml += mtaBullets(COLOR_GROUPS[k].label);
 });
 document.getElementById('subway-key').innerHTML = keyHtml;
 
