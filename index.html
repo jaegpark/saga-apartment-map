@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Saga Apartment Shortlist - NYC</title>
+<!-- v9: LIC sweep - Q1-Q5 Queens pins (Queens Plaza/Qboro/Court Sq/Hunters Point), killed income-capped pins, TJ Court Square layer entry -->
 <!-- v8: M-prefix pins, compare tab with sorting, B-pin click fix -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -29,6 +30,8 @@
     border:2px solid #fff; box-shadow:0 2px 6px rgba(10,15,25,.4);
   }
   .num-pin.bk-pin { background:#2563eb; }
+  .num-pin.q-pin { background:#7c3aed; }
+  .num-pin.dead-pin { background:#9ca3af; font-size:12px; width:24px; height:24px; }
   .work-pin {
     display:flex; align-items:center; justify-content:center;
     width:34px; height:34px; border-radius:9px;
@@ -66,6 +69,7 @@
     background:#c0392b; color:#fff; font-size:12.5px; font-weight:800; margin-right:8px;
   }
   .popup-rank.bk-rank { background:#2563eb; }
+  .popup-rank.q-rank { background:#7c3aed; }
   .popup-link {
     display:block; margin-top:14px; padding:11px 14px; text-align:center;
     background:var(--accent); border-radius:12px; color:#fff !important;
@@ -107,6 +111,7 @@
     box-shadow:0 1px 3px rgba(10,15,25,.3);
   }
   #legend .bkkey { background:#2563eb; font-size:8px; }
+  .qkey { display:inline-flex; width:16px; height:16px; border-radius:50%; background:#7c3aed; color:#fff; font-size:10px; font-weight:700; align-items:center; justify-content:center; margin-right:5px; box-shadow:0 1px 3px rgba(10,15,25,.3); }
   #legend .wkey, #legend .tjkey, #legend .wfkey, #legend .eqkey {
     display:inline-flex; width:16px; height:16px; border-radius:5px;
     color:#fff; font-weight:800; align-items:center; justify-content:center; margin-right:5px;
@@ -372,7 +377,7 @@
       <span><span class="tjkey">TJ</span>Trader Joe's</span>
       <span><span class="wfkey">WF</span>Whole Foods</span>
       <span><span class="eqkey">E</span>Equinox</span>
-      <span><span class="bkkey">B</span>Brooklyn apartment</span>
+      <span><span class="bkkey">B</span>Brooklyn apartment</span>       <span><span class="qkey">Q</span>Queens / LIC</span>       <span><span class="qkey" style="background:#9ca3af;">&#10005;</span>Killed (income-capped)</span>
     </div>
     <div class="row" id="subway-key"></div>
     <div id="legend-foot">Travel times are approximations - walk/bike from road-network distance at 5 km/h and 15 km/h, transit from nearest-station estimates.</div>
@@ -396,8 +401,8 @@
 </div>
 <div id="compare" aria-hidden="true">
   <div class="cmp-head">
-    <div class="cmp-title">Compare all 11</div>
-    <div class="cmp-sub">M1-M6 Manhattan &middot; B1-B5 Brooklyn &middot; swipe sideways</div>
+    <div class="cmp-title">Compare all 16</div>
+    <div class="cmp-sub">M1-M6 Manhattan &middot; B1-B5 Brooklyn &middot; Q1-Q5 Queens &middot; swipe sideways</div>
     <div class="cmp-sorts" id="cmp-sorts"></div>
   </div>
   <div class="cmp-scroll" id="cmp-scroll">
@@ -425,7 +430,12 @@ var listings = [
   { n:"B2", hood:"Williamsburg", addr:"193 Graham Ave #4U, Brooklyn", price:"$4,495/mo", eff:"$4,495/mo", effnote:"", specs:"2BR/1BA + balcony - central AC", commute:"25 min", avail:"Available now", notes:["Guarantors accepted"], lat:40.70863, lon:-73.94374, url:"https://streeteasy.com/building/193-graham/4u", bk:true, travel:{"stations":[{"name":"Montrose Av","lines":"L","walk":6},{"name":"Grand St","lines":"L","walk":8}],"tj":{"name":"Williamsburg","transit":26,"walk":33,"bike":11},"eq":{"name":"Williamsburg","transit":20,"walk":27,"bike":9},"wf":{"name":"Brooklyn Grand Street","transit":7,"walk":6,"bike":2}} },
   { n:"B3", hood:"Downtown Brooklyn", addr:"430 Albee Square #14E, Brooklyn", price:"$4,767/mo", eff:"$4,767/mo", effnote:"", specs:"2BR/1BA - central air", commute:"24 min", avail:"Available now", notes:["Building's own leasing arm - no broker games"], lat:40.69085, lon:-73.98359, url:"https://streeteasy.com/building/canvas-albee-square/14e", bk:true, travel:{"stations":[{"name":"Jay St-MetroTech","lines":"N/R/W","walk":4},{"name":"DeKalb Av","lines":"B/D/N/Q/R/W","walk":5}],"tj":{"name":"City Point","transit":9,"walk":9,"bike":3},"eq":{"name":"Brooklyn Heights","transit":14,"walk":14,"bike":5},"wf":{"name":"Fort Greene","transit":9,"walk":16,"bike":5}} },
   { n:"B4", hood:"Greenpoint border", addr:"492 Humboldt St #1, Brooklyn", price:"$4,950/mo", eff:"$4,950/mo", effnote:"", specs:"2BR/1BA, 850 sqft + private backyard", commute:"24 min", avail:"Avail Sep 15", notes:["AC type unconfirmed - likely window units, ask broker","Individual landlord"], lat:40.71913, lon:-73.94338, url:"https://streeteasy.com/building/492-humboldt-street-brooklyn/1", bk:true, travel:{"stations":[{"name":"Graham Av","lines":"L","walk":8}],"tj":{"name":"Williamsburg","transit":26,"walk":35,"bike":11},"eq":{"name":"Williamsburg","transit":20,"walk":28,"bike":9},"wf":{"name":"Brooklyn Grand Street","transit":13,"walk":10,"bike":3}} },
-  { n:"B5", hood:"Boerum Hill", addr:"259 Wyckoff St #4, Brooklyn", price:"$3,995/mo", eff:"$3,995/mo", effnote:"", specs:"2BR - central air", commute:"30 min", avail:"Available now", lat:40.68351, lon:-73.98385, url:"https://streeteasy.com/building/259-wyckoff-street-brooklyn/4", bk:true, travel:{"stations":[{"name":"Atlantic Av-Barclays Ctr","lines":"D/N/R/W","walk":8},{"name":"Atlantic Av-Barclays Ctr","lines":"B/Q","walk":10}],"tj":{"name":"Court St","transit":29,"walk":20,"bike":6},"eq":{"name":"Brooklyn Heights","transit":26,"walk":25,"bike":8},"wf":{"name":"Fort Greene","transit":13,"walk":15,"bike":5}} }
+  { n:"B5", hood:"Boerum Hill", addr:"259 Wyckoff St #4, Brooklyn", price:"$3,995/mo", eff:"$3,995/mo", effnote:"", specs:"2BR - central air", commute:"30 min", avail:"Available now", lat:40.68351, lon:-73.98385, url:"https://streeteasy.com/building/259-wyckoff-street-brooklyn/4", bk:true, travel:{"stations":[{"name":"Atlantic Av-Barclays Ctr","lines":"D/N/R/W","walk":8},{"name":"Atlantic Av-Barclays Ctr","lines":"B/Q","walk":10}],"tj":{"name":"Court St","transit":29,"walk":20,"bike":6},"eq":{"name":"Brooklyn Heights","transit":26,"walk":25,"bike":8},"wf":{"name":"Fort Greene","transit":13,"walk":15,"bike":5}} },
+  { n:"Q1", hood:"LIC - Queens Plaza", addr:"27-10 37th Ave #6B, Queens", price:"$4,500/mo", eff:"$4,500/mo", effnote:"gross - dropped from $4,695 on Sep 3", specs:"2BR/1BA - in-unit W/D, central air, private backyard + grill", commute:"34 min", avail:"Avail Oct 1", lat:40.75620, lon:-73.93381, url:"https://streeteasy.com/building/27_10-37-avenue-long_island_city/6b", q:true, travel:{"stations":[{"name":"36 Av","lines":"N/W","walk":6},{"name":"Queens Plaza","lines":"E/M/R","walk":12}],"tj":{"name":"Court Square","transit":18,"walk":24,"bike":7},"eq":{"name":"East 54th St","transit":24,"walk":53,"bike":17},"wf":{"name":"East 57th St","transit":24,"walk":50,"bike":16}}, warn:"Building receives 421-a (stabilized - capped renewals, tenant-favorable), but broker must confirm this unit is market-rate, not an affordable one", notes:["Roof deck, gym, package room, virtual doorman","$20 app fee, 1 mo deposit, no amenity fee - electric via ConEd"] },
+  { n:"Q2", hood:"LIC - Hunters Point", addr:"51-10 Vernon Blvd #2D, Queens", price:"$4,650/mo", eff:"$4,650/mo", effnote:"gross", specs:"2BR/1BA - in-unit laundry, central air", commute:"24 min", avail:"Avail Sep 15", lat:40.74178, lon:-73.95457, url:"https://streeteasy.com/building/51_10-vernon-boulevard-long_island_city/2d", q:true, travel:{"stations":[{"name":"Vernon Blvd-Jackson Av","lines":"7","walk":1}],"tj":{"name":"Court Square","transit":8,"walk":13,"bike":7},"eq":{"name":"East 54th St","transit":19,"walk":42,"bike":24},"wf":{"name":"East 57th St","transit":26,"walk":46,"bike":23}}, notes:["Massive renovated layout with a real living room","Virtual doorman + delivery lockboxes","Likely stabilized (1931, 8 units) - capped renewals, tenant-favorable"] },
+  { n:"Q3", hood:"LIC - Queensboro Plaza", addr:"38-28 28th St #2F, Queens", price:"$3,800/mo", eff:"$3,800/mo", effnote:"gross", specs:"2BR/1.5BA - in-unit W/D", commute:"31 min", avail:"Confirm w/ broker", lat:40.75446, lon:-73.93514, url:"https://streeteasy.com/building/38_28-28-street-long_island_city/2f", q:true, travel:{"stations":[{"name":"36 Av","lines":"N/W","walk":9},{"name":"Queens Plaza","lines":"E/M/R","walk":9}],"tj":{"name":"Court Square","transit":15,"walk":21,"bike":6},"eq":{"name":"East 54th St","transit":20,"walk":49,"bike":17},"wf":{"name":"East 57th St","transit":21,"walk":47,"bike":16}}, notes:["Verified market-rate: 2-unit 1957 building, not in DHCR file, no 421-a","No fees","Tiny 2-floor mixed-use building, not a tower"] },
+  { n:"Q4", hood:"LIC - Queensboro Plaza", addr:"29-28 41st Ave #901, Queens", price:"$3,900/mo", eff:"$3,900/mo", effnote:"gross", specs:"2BR - laundry in building (no in-unit W/D)", commute:"29 min", avail:"Listed Sep 6", lat:40.75098, lon:-73.93640, url:"https://streeteasy.com/building/29_28-41st-avenue-long_island_city/901", q:true, travel:{"stations":[{"name":"Queens Plaza","lines":"E/M/R","walk":2},{"name":"Queensboro Plaza","lines":"N/W/7","walk":7}],"tj":{"name":"Court Square","transit":11,"walk":17,"bike":6},"eq":{"name":"East 54th St","transit":14,"walk":46,"bike":17},"wf":{"name":"East 57th St","transit":16,"walk":44,"bike":16}}, notes:["Elevator, part-time doorman, gym, rec room, roof deck","Open-concept living/kitchen - real living room, not a flex","Likely stabilized (1928, 103 units) - tenant-favorable"] },
+  { n:"Q5", hood:"LIC - Court Square", addr:"11-46 44th Dr #2B, Queens", price:"$3,200/mo", eff:"$3,200/mo", effnote:"gross - raised 28% from $2,495 on Sep 3", specs:"2BR/1BA - walkup, laundry in building (no in-unit W/D)", commute:"23 min", avail:"Confirm w/ broker", lat:40.74801, lon:-73.94808, url:"https://streeteasy.com/building/11_46-44-drive-long_island_city/2b", q:true, travel:{"stations":[{"name":"Court Sq-23 St","lines":"E/M","walk":1},{"name":"Court Sq","lines":"7/G","walk":3}],"tj":{"name":"Court Square","transit":7,"walk":7,"bike":2},"eq":{"name":"East 54th St","transit":10,"walk":50,"bike":18},"wf":{"name":"East 57th St","transit":13,"walk":47,"bike":17}}, notes:["Live-in super","In DHCR file: stabilized (capped renewals, tenant-favorable)","Cheapest real option at Court Square - broker repricing upward"] }
 ];
 
 
@@ -438,11 +448,22 @@ var FLOORPLANS = {
 var bounds = [];
 var markers = {};
 listings.forEach(function(l) {
-  var icon = L.divIcon({ className:'', html:'<div class="num-pin'+(l.bk?' bk-pin':'')+'">'+l.n+'</div>', iconSize:[34,34], iconAnchor:[17,17] });
+  var icon = L.divIcon({ className:'', html:'<div class="num-pin'+(l.bk?' bk-pin':(l.q?' q-pin':''))+'">'+l.n+'</div>', iconSize:[34,34], iconAnchor:[17,17] });
   var m = L.marker([l.lat, l.lon], { icon: icon, title: '#'+l.n+' '+l.addr }).addTo(map);
   m.on('click', function() { openPanel(l.n); });
   markers[l.n] = m;
   bounds.push([l.lat, l.lon]);
+});
+
+// ---- Killed buildings (income-capped traps) ----
+var KILLED = [
+  { addr:'26-04 Jackson Ave #4G - The Clairemont', lat:40.74703, lon:-73.94208, why:'Killed: HPD middle-income unit - 2-person income band capped at $176k, household over the max' },
+  { addr:'37-25 32nd St - The Auberge', lat:40.75385, lon:-73.93063, why:'Killed: cheap 2BRs are HPD affordable units (2-person $143.6k-$176.4k + family requirement) - no market-rate units available' }
+];
+KILLED.forEach(function(k) {
+  var ic = L.divIcon({ className:'', html:'<div class="num-pin dead-pin">&#10005;</div>', iconSize:[24,24], iconAnchor:[12,12] });
+  L.marker([k.lat, k.lon], { icon:ic, title:k.addr }).addTo(map)
+    .bindPopup('<div class="popup-title">'+k.addr+'</div><div>'+k.why+'</div>');
 });
 
 // ---- Side panel ----
@@ -485,7 +506,7 @@ function openPanel(n) {
   var l = null;
   for (var i = 0; i < listings.length; i++) { if (listings[i].n === n) { l = listings[i]; break; } }
   if (!l) return;
-  panelTitle.innerHTML = '<span class="popup-rank'+(l.bk?' bk-rank':'')+'">'+l.n+'</span><span>'+l.hood+'</span>';
+  panelTitle.innerHTML = '<span class="popup-rank'+(l.bk?' bk-rank':(l.q?' q-rank':''))+'">'+l.n+'</span><span>'+l.hood+'</span>';
   var h = '';
   h += '<div class="p-addr">'+l.addr+'</div>';
   h += '<div class="p-rent"><span class="p-rent-v">'+l.price+'</span><span class="p-rent-k">listed rent</span></div>';
@@ -601,7 +622,8 @@ var TRADER_JOES = [
 ,
   { name:"City Point, Brooklyn", addr:"445 Gold St, Brooklyn, NY 11201", lat:40.69331, lon:-73.98338 },
   { name:"Williamsburg, Brooklyn", addr:"200 Kent Ave, Brooklyn, NY 11249", lat:40.71649, lon:-73.96603 },
-  { name:"Court St, Brooklyn", addr:"130 Court St, Brooklyn, NY 11201", lat:40.68952, lon:-73.99286 }
+  { name:"Court St, Brooklyn", addr:"130 Court St, Brooklyn, NY 11201", lat:40.68952, lon:-73.99286 },
+  { name:"Court Square, Queens", addr:"22-43 Jackson Ave, Long Island City, NY 11101", lat:40.74592, lon:-73.94601 }
 ];
 
 var WHOLE_FOODS = [
@@ -717,7 +739,12 @@ var EXTRA = {
   'B2': { beds:'2BR/1BA', sqft:null, fees:'No fees disclosed &middot; guarantors accepted', warn:null, landlord:'Nooklyn NYC LLC (listing broker)', availRank:0 },
   'B3': { beds:'2BR/1BA', sqft:null, fees:'No monthly, move-in, or application fees (verified clean)', warn:null, landlord:'Canvas Property Group - building\'s own leasing arm (institutional)', availRank:0 },
   'B4': { beds:'2BR/1BA', sqft:850, fees:'No fees disclosed on listing', warn:'AC type unconfirmed - likely window units, ask broker', landlord:'Individual landlord (via Coda Real Estate)', availRank:1 },
-  'B5': { beds:'2BR/1BA', sqft:null, fees:'No fees disclosed on listing', warn:null, landlord:'Nolita Group (listing broker)', availRank:0 }
+  'B5': { beds:'2BR/1BA', sqft:null, fees:'No fees disclosed on listing', warn:null, landlord:'Nolita Group (listing broker)', availRank:0 },
+  'Q1': { beds:'2BR/1BA', sqft:null, fees:'$20 app fee &middot; 1 month deposit &middot; no amenity fee &middot; electric via ConEd', warn:'421-a building - broker must confirm market-rate unit, not an affordable one', landlord:'REAL New York (listing broker)', availRank:2 },
+  'Q2': { beds:'2BR/1BA', sqft:null, fees:'No fees disclosed on listing', warn:null, landlord:'Not stated on listing', availRank:1 },
+  'Q3': { beds:'2BR/1.5BA', sqft:null, fees:'No fees', warn:null, landlord:'Brokered - 2-unit 1957 building, verified market-rate', availRank:4 },
+  'Q4': { beds:'2BR', sqft:null, fees:'No fees disclosed on listing', warn:null, landlord:'103-unit 1928 elevator building, part-time doorman', availRank:4 },
+  'Q5': { beds:'2BR/1BA', sqft:null, fees:'No fees disclosed on listing', warn:null, landlord:'1907 walkup, live-in super', availRank:4 }
 };
 var JAE_PICKS = ['B3','B1','B2','M1','M3'];
 var NICK_PICKS = ['M1','M3','B1','B2','B3'];
@@ -811,7 +838,7 @@ function renderCompare() {
   var head = '<div class="cmp-row headrow"><div class="cmp-cell cmp-label"></div>';
   cols.forEach(function(l) {
     head += '<div class="cmp-cell cmp-uhead">'
-      + '<div class="u-top"><span class="popup-rank' + (l.bk ? ' bk-rank' : '') + '" style="margin-right:0;">' + l.n + '</span>'
+      + '<div class="u-top"><span class="popup-rank' + (l.bk ? ' bk-rank' : (l.q ? ' q-rank' : '')) + '" style="margin-right:0;">' + l.n + '</span>'
       + '<span class="u-hood">' + l.hood + '</span></div>'
       + '<div class="u-addr">' + l.addr + '</div>'
       + '<div class="u-rent">' + l.price.replace('/mo','') + '<small>/mo</small></div>'
